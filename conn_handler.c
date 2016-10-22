@@ -7,7 +7,7 @@
 #include "rshd.h"
 #define DEFAULT_PORT 8888
 
-void err_dump(const char *);
+
 
 int main(int argc, char *argv[]) {
   char* pname = argv[0];
@@ -57,7 +57,4 @@ int main(int argc, char *argv[]) {
   }
 }
 
-void err_dump(const char *str) {
-  perror(str);
-  exit(1);
-}
+
