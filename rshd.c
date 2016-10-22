@@ -12,10 +12,11 @@ char *welcome_str[3]={
 "** Welcome to the information server. **\n",
 "****************************************\n"};
 
+enum{READ_CMD, READ_ARG};
 
 void rsh(int sockfd) {
   int n,i;
-  char buf[BUFF_SIZE];
+  char buf[BUFF_SIZE], *cptr;
   int welcome_str_len = strlen(welcome_str[0]);
   for(i=0;i<3;i++){
   if (write(sockfd, welcome_str[i], welcome_str_len) != welcome_str_len)
@@ -23,12 +24,24 @@ void rsh(int sockfd) {
   }
 
   for (;;) {
+    int st=READ_CMD;
     if(write(sockfd,"% ",2)!=2) err_dump("Write Prompt Error");
     n = read(sockfd, buf, BUFF_SIZE);
     if (n == 0)
       return;
     else if (n < 0)
       err_dump("Read Socket Error!");
+
+    cptr = strtok(buf," ");
+    while(cptr!=NULL){
+    switch(st){
+        case READ_CMD:
+            break;
+        case READ_ARG:
+            break;
+    }
+    }
+
 //  if (write(sockfd, buf, n) != n)
 //    err_dump("Write Socket Error!");
   }
