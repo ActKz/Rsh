@@ -82,6 +82,7 @@ void rsh(int sockfd) {
         }
         if (j == env[PATH].size()){
           write_sock(sockfd, "Unknown command: [" + CMD + "].\n");
+          clear_queue(cmds);
           break; // read next user input
         }
         //          int childpid, pipe1[2], pipe2[2];
@@ -97,6 +98,10 @@ void rsh(int sockfd) {
       cmds.pop();
     }
   }
+}
+void clear_queue(std::queue<std::vector<std::string>> &q){
+    std::queue<std::vector<std::string>> empty;
+    std::swap(q, empty);
 }
 
 void write_sock(int sockfd, std::string str) {

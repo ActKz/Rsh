@@ -5,6 +5,7 @@
 void rsh(int);
 void err_dump(const char *);
 void write_sock(int, std::string);
+void clear_queue(std::queue<std::vector<std::string>>&);
 enum {
   NORMAL,
   PIPE_n,
