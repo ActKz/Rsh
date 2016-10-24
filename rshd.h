@@ -4,4 +4,12 @@
 #include <string>
 void rsh(int);
 void err_dump(const char *);
-void cmd_parser(char*,std::queue<std::tuple<std::string, std::vector<std::string>>>*, int*,int* ,int);
+void write_sock(int, std::string);
+enum {
+  NORMAL,
+  PIPE_n,
+  SUPERPIPE_n,
+  PIPE_n_ERROR,
+  SUPERPIPE_n_ERROR,
+  WRITE_FILE
+};
