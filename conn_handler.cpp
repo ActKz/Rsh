@@ -51,7 +51,7 @@ int main(int argc, char *argv[]) {
     else if (childpid == 0) {
       close(sockfd);
       rsh(newsockfd);
-      exit(0);
+      _exit(0);
     }
     close(newsockfd);
   }

@@ -1,4 +1,6 @@
 *.py
 *.pyc
 *.swp
+*.out
 rshd
+
