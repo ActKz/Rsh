@@ -2,6 +2,7 @@
 *.pyc
 *.swp
 *.out
+testing/*
 rshd
 ras/bin/noop
 ras/bin/number

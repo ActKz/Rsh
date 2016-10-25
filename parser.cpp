@@ -1,6 +1,7 @@
 #include<vector>
 #include<queue>
 #include<stdlib.h>
+#include<string.h>
 #include"rshd.h"
 void cmd_parser(
     char *buf,
@@ -32,7 +33,6 @@ void cmd_parser(
           *st = SUPERPIPE_n_ERROR;
         break;
       case '>':
-        cmd_arg.push_back(cptr);
         *st = WRITE_FILE;
         break;
       default:
