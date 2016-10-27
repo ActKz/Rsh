@@ -1,16 +1,25 @@
+#pragma once
 #include <string>
+#include <queue>
 #include "TokenizerClass.h"
+#define BUFF_SIZE 15000
 using namespace std;
 class Rsh{
 public:
     Rsh(int);
     ~Rsh();
-    char* printenv(const char*);
-    int setenv(const char*, const char*);
-    void chroot(char*);
-    void exec_cmd(queue<struct GROUP_TOKEN>);
+    void printenv(const string);
+    void setenv(const string, const string);
+    void chroot(const char*);
+    void exec_cmd(queue<group_token*>);
 
-    const char* welcome_str();
+    void read_sock();
+    void write_sock(string);
+    void print_welcome();
+    void print_prompt();
+    char* buf();
+    void buf_split();
+    queue<string> getline();
 private:
     const char *_root = "ras";
     const string _welcome_str =
@@ -18,4 +27,8 @@ private:
     "** Welcome to the information server. **\n"
     "****************************************\n";
     int _sockfd;
+    char _buf[BUFF_SIZE];
+    int _buflen;
+    queue<string> _lines;
+    const char* _prompt= "% ";
 };

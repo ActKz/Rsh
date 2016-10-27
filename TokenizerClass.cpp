@@ -10,12 +10,6 @@
 
 using namespace std;
 
-typedef struct GROUP_TOKEN{
-    int st;
-    string file_name;
-    vector<string> argv;
-}group_token;
-
 Tokenizer::Tokenizer(const char *input){
    _buf = strdup(input);
    _tokens = new group_token;
@@ -26,7 +20,7 @@ Tokenizer::~Tokenizer(){
     _tokens->~GROUP_TOKEN();
 }
 
-queue<struct GROUP_TOKEN*> Tokenizer::cmd_args(){
+queue<group_token*> Tokenizer::cmd_args(){
     return _cmd_args;
 }
 

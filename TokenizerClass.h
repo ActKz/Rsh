@@ -1,9 +1,14 @@
+#pragma once
 #include<string>
 #include<queue>
 #include<vector>
 using namespace std;
 
-struct GROUP_TOKEN;
+typedef struct GROUP_TOKEN{
+    int st;
+    string file_name;
+    vector<string> argv;
+}group_token;
 
 class Tokenizer{
 
@@ -11,13 +16,13 @@ public:
     Tokenizer(const char*);
     ~Tokenizer();
 
-    queue<struct GROUP_TOKEN*> cmd_args();
+    queue<group_token*> cmd_args();
     void parse();
 
 private:
     int _delay_pipe;
     char *_cptr, *_buf;
-    struct GROUP_TOKEN *_tokens;
-    queue<struct GROUP_TOKEN*> _cmd_args;
+    group_token *_tokens;
+    queue<group_token*> _cmd_args;
 
 };
