@@ -136,6 +136,12 @@ void rsh(int sockfd) {
       }
       cmds.pop();
     }
+	for(int j=0;j<cmds_size;j++){
+	close(write_next[j][0]);
+	close(write_next[j][1]);
+}
+	close(write_to_child[0]);
+	close(write_to_child[1]);
   }
 }
 void clear_queue(std::queue<std::vector<std::string>> &q) {
@@ -156,6 +162,7 @@ char *convert(const std::string & s)
 {
    char *pc = new char[s.size()+1];
    strcpy(pc, s.c_str());
+   printf("%s",pc);
    return pc;
 }
 
