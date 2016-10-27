@@ -28,6 +28,8 @@ void rsh(int sockfd) {
   std::queue<std::vector<std::string>> cmds;
   std::map<std::string, std::vector<std::string>> env;
   env[PATH] = {"bin", "."};
+  dup2(sockfd,STDERR_FILENO); // redirect stderr to socket
+  dup2(sockfd,STDOUT_FILENO);
 
   for (i = 0; i < 3; i++) {
     write_sock(sockfd, welcome_str[i]);
@@ -108,6 +110,7 @@ void rsh(int sockfd) {
         }
 
 		std::transform(cmds.front().begin(), cmds.front().end(), std::back_inserter(vc), convert);
+        printf("%d",vc.size());
 
         if (cmds_size == cmds.size()) { // numbered-pipe
           if (pipe(write_to_child) < 0)
@@ -116,21 +119,34 @@ void rsh(int sockfd) {
         if (pipe(write_next[cmds.size() - 1]) < 0)
           err_dump("Can't Create Pipes");
 
-		dup2(sockfd,STDOUT_FILENO);
-		dup2(sockfd,STDERR_FILENO);
+//      dup2(sockfd,STDOUT_FILENO);
+//      dup2(sockfd,STDERR_FILENO);
         if ((childpid = fork()) < 0)
           err_dump("Can't Fork");
         else if (childpid > 0) { // parent
+            if(cmds_size == cmds.size()){ // numbered-pipe
+                write_to_child[0] = -1;
+                write_to_child[1] = -1;
+                close(write_to_child[0]);
+                close(write_to_child[1]);
+            }
+            else{
+                write_to_child[0] = -1;
+                write_to_child[1] = -1;
+                close(write_to_child[0]);
+                close(write_to_child[1]);
+            }
         } else {                 // child
           if (cmds.size() == 1 && cmds_size > 1)
             child_ps(write_next[cmds.size()][0], write_next[cmds.size() - 1][1],
                      (env[PATH][j] + "/" + CMD).c_str(), vc, st);
           else if (cmds_size == cmds.size())
-            child_ps(-1, write_next[cmds.size() - 1][1],
+            child_ps(write_to_child[0], write_next[cmds.size() - 1][1],
                      (env[PATH][j] + "/" + CMD).c_str(), vc, st);
           else
             child_ps(write_next[cmds.size()][0], write_next[cmds.size() - 1][1],
                      (env[PATH][j] + "/" + CMD).c_str(), vc, NORMAL);
+          err_dump("");
 		  exit(0);
         }
       }
@@ -170,7 +186,8 @@ void parent_ps(int readfd, int write_fd) {}
 void child_ps(int readfd, int write_fd, const char *CMD,
               std::vector<char*> &args, int st) {
   int file;
-
+  if(readfd!=-1)
+      dup2(STDIN_FILENO,readfd);
   switch (st) {
   case NORMAL:
     break;
@@ -180,12 +197,11 @@ void child_ps(int readfd, int write_fd, const char *CMD,
     if(file < 0)    {exit(1);}
     // redirect standard output to the file
     if(dup2(file,STDOUT_FILENO) < 0)    exit(1);
-
-
     break;
   case PIPE_n:
     break;
   case SUPERPIPE_n:
+    dup2(write_fd,STDERR_FILENO);
     break;
   }
 	::execv(CMD,&args[0]);
