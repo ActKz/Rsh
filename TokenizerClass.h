@@ -4,11 +4,13 @@
 #include<vector>
 using namespace std;
 
-typedef struct GROUP_TOKEN{
+class group_token{
+public:
     int st;
     string file_name;
     vector<string> argv;
-}group_token;
+    int delay_pipe;
+};
 
 class Tokenizer{
 
@@ -16,13 +18,13 @@ public:
     Tokenizer(const char*);
     ~Tokenizer();
 
-    queue<group_token*> cmd_args();
+    queue<group_token> cmd_args();
     void parse();
+    void clear_queue();
+    void parse_single_command(char*);
 
 private:
-    int _delay_pipe;
-    char *_cptr, *_buf;
-    group_token *_tokens;
-    queue<group_token*> _cmd_args;
+    char *_buf;
+    queue<group_token> _cmd_args;
 
 };

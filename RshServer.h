@@ -17,6 +17,7 @@ class RshServer{
         int accept_sock();
         int clilen,newsockfd,childpid,sockfd;
         struct sockaddr_in cli_addr;
+        void prepare();
     private:
         int port_num;
         struct sockaddr_in serv_addr;

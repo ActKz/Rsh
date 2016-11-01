@@ -1,5 +1,5 @@
 CC=g++
-CFLAGS=-std=c++11
+CFLAGS=-std=c++11 -g
 BIN_EXEC=$(TARG_NOOP) $(TARG_NUM) $(TARG_RMT) $(TARG_RMT0) $(TARG_RSHD) $(OBJS)
 TARG_NOOP=./ras/bin/noop
 TARG_NUM=./ras/bin/number

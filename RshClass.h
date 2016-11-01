@@ -11,15 +11,17 @@ public:
     void printenv(const string);
     void setenv(const string, const string);
     void chroot(const char*);
-    void exec_cmd(queue<group_token*>);
+    void exec_cmd(queue<group_token>);
 
+    void prepare(const char*);
     void read_sock();
     void write_sock(string);
     void print_welcome();
     void print_prompt();
     char* buf();
     void buf_split();
-    queue<string> getline();
+    queue<string> readline();
+    void clear_lines();
 private:
     const char *_root = "ras";
     const string _welcome_str =

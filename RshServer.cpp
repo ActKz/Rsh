@@ -53,3 +53,9 @@ int RshServer::accept_sock(){
       perror(strerror(errno));
     return newsockfd;
 }
+
+void RshServer::prepare(){
+    create_sock();
+    bind_sock();
+    listen_sock();
+}
