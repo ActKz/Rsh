@@ -82,21 +82,30 @@ void Rsh::exec_cmd(queue<group_token> cmd_args) {
       } else { // child
       dup2(_sockfd, STDOUT_FILENO);
         vector<char*> arg;
-        std::transform(vs.begin(), vs.end(), std::back_inserter(arg), convert);
+        arg.clear();
+//      std::transform(vs.begin(), vs.end(), std::back_inserter(arg), convert);
 //      for(int i=0;i<vs.size();i++){
 //          cout<<vs[i]<<" ";
 //          arg.push_back(strdup(vs[i].data()));
 //      }
-
-        cout<<"!!!"<<arg.size()<<endl;
         for(int i=0;i<vs.size();i++){
+          char *pc = new char[vs[i].size() + 1];
+          strcpy(pc, vs[i].c_str());
+          pc[vs[i].size()] = '\0';
+          arg.push_back(pc);
+        }
+        cout << "CMD :" << CMD <<endl;
+        cout << "vs size: " <<vs.size() <<endl;
+        cout << "arg size: " << arg.size() << endl;
+        cout<<"!!!"<<arg.size()<<endl;
+        for(int i=0;i<arg.size();i++){
 //          cout<<arg[i]<<"/";
             printf("%s ",arg[i]);
         }
         int ret = execvp(CMD.c_str(), arg.data());
         if (ret < 0)
           perror(strerror(errno));
-        for ( size_t i = 0 ; i < arg.size() ; i++ )
+        for ( int i = 0 ; i < arg.size() ; i++ )
                         delete [] arg[i];
         exit(0);
       }
