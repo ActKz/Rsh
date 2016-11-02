@@ -7,6 +7,7 @@
 #include <string>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <stdio.h>
 using namespace std;
 
 //const char *convert(const std::string & );
@@ -49,10 +50,10 @@ void Rsh::chroot(const char *root) {
 void Rsh::exec_cmd(queue<group_token> cmd_args) {
   int childpid;
   while (!cmd_args.empty()) {
-      cout<<"!"<<cmd_args.front().argv.size()<<endl;
+//    cout<<"!"<<cmd_args.front().argv.size()<<endl;
     const string CMD = cmd_args.front().argv[0];
     vector<string> vs = cmd_args.front().argv;
-      cout<<"!!"<<vs.size()<<endl;
+//    cout<<"!!"<<vs.size()<<endl;
     if (CMD == "printenv") {
       if (vs.size() > 1) {
         for (int i = 1; i < vs.size(); i++) {
@@ -88,14 +89,19 @@ void Rsh::exec_cmd(queue<group_token> cmd_args) {
 //          arg.push_back(strdup(vs[i].data()));
 //      }
 
-        cout<<"!!!"<<arg.size()<<endl;
-        for(int i=0;i<vs.size();i++){
+//      cout<<"!!!"<<arg.size()<<endl;
+//      for(int i=0;i<vs.size();i++){
 //          cout<<arg[i]<<"/";
-            printf("%s ",arg[i]);
-        }
+//      }
         int ret = execvp(CMD.c_str(), arg.data());
+        switch(errno){
+            case ENOENT:
+                write_sock("Unknown command: ["+CMD+"].\n");
+                break;
+        }
         if (ret < 0)
           perror(strerror(errno));
+
         for ( size_t i = 0 ; i < arg.size() ; i++ )
                         delete [] arg[i];
         exit(0);

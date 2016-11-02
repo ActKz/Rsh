@@ -5,6 +5,7 @@
 #include <queue>
 #define ROOT "ras"
 #include <iostream>
+#include <errno.h>
 using namespace std;
 void rsh(int);
 
@@ -31,9 +32,9 @@ void rsh(int sockfd){
       rsh.prepare(ROOT);
       for(;;){
           tmp=rsh.readline();
-          cout<<"!"<<tmp.size()<<endl;
+//        cout<<"!"<<tmp.size()<<endl;
           while(!tmp.empty()){
-              cout<<"~"<<tmp.front()<<endl;
+//            cout<<"~"<<tmp.front()<<endl;
               Tokenizer tokens(tmp.front().c_str());
               tokens.parse();
               queue<group_token> parsed_token = tokens.cmd_args();
