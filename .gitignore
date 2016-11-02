@@ -2,6 +2,10 @@
 *.pyc
 *.swp
 *.out
+
+.gdb*
+peda*
+
 testing/*
 rshd
 ras/bin/noop
