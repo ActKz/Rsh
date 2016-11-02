@@ -32,9 +32,13 @@ void rsh(int sockfd){
       rsh.prepare(ROOT);
       for(;;){
           tmp=rsh.readline();
+<<<<<<< HEAD
 //        cout<<"!"<<tmp.size()<<endl;
           while(!tmp.empty()){
 //            cout<<"~"<<tmp.front()<<endl;
+=======
+          while(!tmp.empty()){
+>>>>>>> 62a4c18e58c635dad964e3ad4081a6441763ffeb
               Tokenizer tokens(tmp.front().c_str());
               tokens.parse();
               queue<group_token> parsed_token = tokens.cmd_args();

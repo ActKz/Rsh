@@ -10,8 +10,6 @@
 #include <stdio.h>
 using namespace std;
 
-//const char *convert(const std::string & );
-char *convert(const std::string &);
 Rsh::Rsh(int sockfd) { _sockfd = sockfd; }
 
 Rsh::~Rsh() {
@@ -50,10 +48,8 @@ void Rsh::chroot(const char *root) {
 void Rsh::exec_cmd(queue<group_token> cmd_args) {
   int childpid;
   while (!cmd_args.empty()) {
-//    cout<<"!"<<cmd_args.front().argv.size()<<endl;
     const string CMD = cmd_args.front().argv[0];
     vector<string> vs = cmd_args.front().argv;
-//    cout<<"!!"<<vs.size()<<endl;
     if (CMD == "printenv") {
       if (vs.size() > 1) {
         for (int i = 1; i < vs.size(); i++) {
@@ -81,29 +77,25 @@ void Rsh::exec_cmd(queue<group_token> cmd_args) {
         int ret;
         waitpid(childpid, &ret, 0);
       } else { // child
-      dup2(_sockfd, STDOUT_FILENO);
-        vector<char*> arg;
-        std::transform(vs.begin(), vs.end(), std::back_inserter(arg), convert);
-//      for(int i=0;i<vs.size();i++){
-//          cout<<vs[i]<<" ";
-//          arg.push_back(strdup(vs[i].data()));
-//      }
-
-//      cout<<"!!!"<<arg.size()<<endl;
-//      for(int i=0;i<vs.size();i++){
-//          cout<<arg[i]<<"/";
-//      }
-        int ret = execvp(CMD.c_str(), arg.data());
-        switch(errno){
-            case ENOENT:
-                write_sock("Unknown command: ["+CMD+"].\n");
-                break;
+        dup2(_sockfd, STDOUT_FILENO);
+        char **arg = new char *[vs.size() + 1];
+        for (int i = 0; i < vs.size(); i++) {
+          arg[i] = new char[vs[i].length() + 1];
+          strcpy(arg[i], vs[i].c_str());
+          arg[i][vs[i].length()] = '\0';
+        }
+        arg[vs.size()] = NULL;
+        int ret = execvp(CMD.c_str(), arg);
+        switch (errno) {
+        case ENOENT:
+          write_sock("Unknown command: [" + CMD + "].\n");
+          break;
         }
         if (ret < 0)
           perror(strerror(errno));
 
-        for ( size_t i = 0 ; i < arg.size() ; i++ )
-                        delete [] arg[i];
+        for (int i = 0; i < vs.size(); i++)
+          delete[] arg[i];
         exit(0);
       }
     }
@@ -160,18 +152,6 @@ void Rsh::prepare(const char *root) {
   chroot(root);
   print_welcome();
 }
-
-char *convert(const std::string &s) {
-  char *pc = new char[s.size() + 1];
-  strcpy(pc, s.c_str());
-  pc[s.size()] = '\0';
-  return pc;
-}
-
-/*const char *convert(const std::string & s)
-{
-       return s.c_str();
-}*/
 
 #ifdef test
 int main() {

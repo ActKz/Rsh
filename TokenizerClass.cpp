@@ -18,12 +18,10 @@ Tokenizer::Tokenizer(const char *input){
 }
 
 Tokenizer::~Tokenizer(){
-//  _tokens->~group_token();
     while(!_cmd_args.empty()){
         _cmd_args.pop();
     }
     delete [] _buf;
-//  _cmd_args->~queue();
 }
 
 queue<group_token> Tokenizer::cmd_args(){
@@ -34,48 +32,9 @@ void Tokenizer::parse(){
     char *saveptr = NULL;
     char *cptr = strtok_r(_buf, "|", &saveptr);
     while(cptr != NULL){
-        cout<<cptr<<endl;
         parse_single_command(cptr);
         cptr = strtok_r(NULL, "|", &saveptr);
     }
-//  _cptr = strtok(_buf, " ");
-//  while (_cptr != NULL) {
-//    if(_tokens->st == WRITE_FILE){
-//        _tokens->file_name = strdup(_cptr);
-//        break;
-//    }
-//    switch (_cptr[0]) {
-//    case '|':
-//      if (isdigit(_cptr[1])) {
-//        _tokens->st = PIPE_n;
-//        _delay_pipe = atoi(_cptr);
-//      } else if (_cptr[1] == '\0'){
-//        _tokens->st = NORMAL_PIPE;
-//      }
-//      else {
-//        _tokens->st = PIPE_n_ERROR;
-//      }
-//      _cmd_args.push(*_tokens);
-//      _tokens = new group_token;
-//      break;
-//    case '!':
-//      if (isdigit(_cptr[1])) {
-//        _tokens->st = SUPERPIPE_n;
-//        _delay_pipe = atoi(_cptr);
-//      } else{
-//        _tokens->st = SUPERPIPE_n_ERROR;
-//      }
-//      _cmd_args.push(*_tokens);
-//      break;
-//    case '>':
-//      _tokens->st = WRITE_FILE;
-//      break;
-//    default:
-//      _tokens->argv.push_back(_cptr);
-//    }
-//    _cptr = strtok(NULL, " ");
-//  }
-//  _cmd_args.push(*_tokens);
 }
 
 void Tokenizer::parse_single_command(char *str){
