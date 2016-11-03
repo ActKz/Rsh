@@ -1,4 +1,5 @@
 #include "RshClass.h"
+#include "PipeClass.h"
 #include <algorithm>
 #include <errno.h>
 #include <iostream>
@@ -45,8 +46,9 @@ void Rsh::chroot(const char *root) {
   }
 }
 
-void Rsh::exec_cmd(queue<group_token> cmd_args) {
-  int childpid;
+
+void Rsh::exec_cmd(queue<group_token> cmd_args, vector<Pipe> &pipefd) {
+  int childpid, pre_readfd = 0, pre_writefd = 0;
   while (!cmd_args.empty()) {
     const string CMD = cmd_args.front().argv[0];
     vector<string> vs = cmd_args.front().argv;
@@ -71,13 +73,47 @@ void Rsh::exec_cmd(queue<group_token> cmd_args) {
     } else if (CMD == "exit") {
       exit(0);
     } else {
+
+        Pipe pipes;
+
       if ((childpid = fork()) < 0)
         perror(strerror(errno));
       if (childpid > 0) { // parent
+        close(pipes.pipes[1]);
         int ret;
+        char res[1000];
+        if(!pipefd.empty()){
+            cout<<"Read: "<<pipefd.back().pipes[0]<<endl;
+            cout<<"Write: "<<pipefd.back().pipes[1]<<endl;
+            pipefd.pop_back();
+        }
+        if(cmd_args.size()==1){
+            while((ret = read(pipes.pipes[0],res,1000)>0)){
+                    write_sock(res);
+                    }
+            close(pipes.pipes[0]);
+        }
+        else
+            pipefd.push_back(pipes);
         waitpid(childpid, &ret, 0);
+
       } else { // child
-        dup2(_sockfd, STDOUT_FILENO);
+          close(pipes.pipes[0]);
+          cout<<"CMD: "<<CMD<<endl;
+          int rett;
+          if(!pipefd.empty()){
+              rett = dup2(pipefd.back().pipes[0], STDIN_FILENO);
+              if(rett<0)
+              perror("DUP FAIL");
+              else
+                  close(pipefd.back().pipes[0]);
+          }
+          rett = dup2(pipes.pipes[1],STDOUT_FILENO);
+          if(rett<0)
+              perror("DUP FAIL");
+          else
+              close(pipes.pipes[1]);
+
         char **arg = new char *[vs.size() + 1];
         for (int i = 0; i < vs.size(); i++) {
           arg[i] = new char[vs[i].length() + 1];

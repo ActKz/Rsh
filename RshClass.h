@@ -2,6 +2,7 @@
 #include <string>
 #include <queue>
 #include "TokenizerClass.h"
+#include "PipeClass.h"
 #define BUFF_SIZE 15000
 using namespace std;
 class Rsh{
@@ -11,7 +12,7 @@ public:
     void printenv(const string);
     void setenv(const string, const string);
     void chroot(const char*);
-    void exec_cmd(queue<group_token>);
+    void exec_cmd(queue<group_token>, vector<Pipe>&);
 
     void prepare(const char*);
     void read_sock();

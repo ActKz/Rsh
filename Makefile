@@ -6,7 +6,7 @@ TARG_NUM=./ras/bin/number
 TARG_RMT=./ras/bin/removetag
 TARG_RMT0=./ras/bin/removetag0
 TARG_RSHD=rshd
-CPP=./TokenizerClass.cpp ./RshClass.cpp ./RshServer.cpp ./main.cpp
+CPP=./TokenizerClass.cpp ./RshClass.cpp ./RshServer.cpp ./main.cpp ./PipeClass.cpp
 all:
 	$(CC) $(CFLAGS) $(CPP) -o $(TARG_RSHD)
 

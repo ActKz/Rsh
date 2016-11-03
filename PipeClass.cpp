@@ -6,16 +6,11 @@
 
 
 Pipe::Pipe(){
-  if (pipe(pre_cmd) < 0 || pipe(next_cmd) < 0 || pipe(result) < 0)
-      perror(strerror(errno));
-
+    if(pipe(pipes)<0)
+        perror(strerror(errno));
 }
+
 Pipe::~Pipe(){
+
 }
 
-void Pipe::rdr2next(){
-}
-void Pipe::rdr_err(){
-}
-void Pipe::rdr_pre_cmd(){
-}

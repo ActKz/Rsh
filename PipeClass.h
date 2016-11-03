@@ -1,11 +1,18 @@
+#pragma once
+#include <vector>
+
+using namespace std;
+
 class Pipe{
     public:
+        Pipe(int);
         Pipe();
         ~Pipe();
 
-        void rdr2next();
+        void rdr_input(int);
         void rdr_err();
-        void rdr_pre_cmd();
-    private:
-        int pre_cmd[2], next_cmd[2], result[2];
+        void rdr_output(int);
+        void close_precmd();
+        void close_nextcmd();
+        int pipes[2];
 };
