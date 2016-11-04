@@ -74,56 +74,100 @@ void Rsh::exec_cmd(queue<group_token> cmd_args, vector<Pipe> &pipefd) {
     } else if (CMD == "exit") {
       exit(0);
     } else {
-
+      cout << "STATE: " << cmd_args.front().st << endl;
       Pipe pipes;
-
+      cout << "CURR READ: " << pipes.pipes[0] << ", WRITE: " << pipes.pipes[1]
+           << endl;
       if ((childpid = fork()) < 0)
         perror(strerror(errno));
       if (childpid > 0) { // parent
-        close(pipes.pipes[1]);
         int ret;
         char res[1000];
-        if (!pipefd.empty()) {
-          cout << "Read: " << pipefd.back().pipes[0] << endl;
-          cout << "Write: " << pipefd.back().pipes[1] << endl;
-          pipefd.pop_back();
+        //      close(pipes.pipes[1]);
+
+        for (int i = 0; i < pipefd.size(); i++) {
+          if (pipefd[i].delay_pipe == 0) {
+            pipefd[i].close_write_pipe();
+            pipefd[i].close_read_pipe();
+            pipefd.erase(pipefd.begin()+i);
+            i--;
+          }
         }
-        if (cmd_args.size() == 1) {
+        if (cmd_args.front().st == PIPE_n ||
+            cmd_args.front().st == SUPERPIPE_n) {
+            int i;
+            for(i=0;i<pipefd.size();i++){
+                if(pipefd[i].delay_pipe == cmd_args.front().delay_pipe)
+                    break;
+            }
+            if(i == pipefd.size()){
+          pipes.delay_pipe = cmd_args.front().delay_pipe;
+          pipefd.push_back(pipes);
+            }
+          cout << "pipes: " << pipefd.back().pipes[0] << ", "
+               << pipefd.back().pipes[1]
+               << ";delay: " << pipefd.back().delay_pipe << endl;
+        } else if (cmd_args.size() == 1) {
+
+          pipes.close_write_pipe();
           memset(res, '\0', 1000);
           while ((ret = read(pipes.pipes[0], res, 1000) > 0)) {
             write_sock(res);
           }
-          close(pipes.pipes[0]);
-        } else
-          pipefd.push_back(pipes);
+          pipes.close_read_pipe();
+        } else {
+          pipes.close_write_pipe();
+          if (pre_readfd != 0 && close(pre_readfd) != 0)
+            cerr << "Close failed: pipefd=" << pre_readfd << ", "
+                 << strerror(errno) << endl;
+          pre_readfd = pipes.pipes[0];
+        }
         waitpid(childpid, &ret, 0);
 
       } else { // child
-        close(pipes.pipes[0]);
         cout << "CMD: " << CMD << endl;
-        int rett;
-        cout << "Curr st: " << cmd_args.front().st << endl;
-        if (!pipefd.empty()) {
-          rett = dup2(pipefd.back().pipes[0], STDIN_FILENO);
+        //      close(pipes.pipes[0]);
+        pipes.close_read_pipe();
+        int rett, file;
+        if (pre_readfd != 0) {
+          cout << "PREV READ: " << pre_readfd << endl;
+          rett = dup2(pre_readfd, STDIN_FILENO);
           if (rett < 0)
-            perror("DUP FAIL");
-          else
-            close(pipefd.back().pipes[0]);
+            perror("DUP1 FAIL");
+          else if (close(pre_readfd) != 0)
+            cerr << "Close fail: pipefd=" << pre_readfd << strerror(errno)
+                 << endl;
+        } else {
+          for (int i = 0; i < pipefd.size(); i++) {
+            if (pipefd[i].delay_pipe == 0) {
+              pipefd[i].close_write_pipe();
+              rett = dup2(pipefd[i].pipes[0], STDIN_FILENO);
+              if (rett < 0)
+                perror("DUP2 FAIL");
+              else
+                //                  close(pipefd[i].pipes[0]);
+                pipefd[i].close_read_pipe();
+            }
+          }
         }
+        int j;
         switch (cmd_args.front().st) {
         case NORMAL:
           rett = dup2(pipes.pipes[1], STDERR_FILENO);
           if (rett < 0)
-            perror("DUP FAIL");
+            perror("DUP3 FAIL");
           rett = dup2(pipes.pipes[1], STDOUT_FILENO);
           if (rett < 0)
-            perror("DUP FAIL");
-          else
-            close(pipes.pipes[1]);
+            perror("DUP4 FAIL");
+          //          close(pipes.pipes[1]);
           break;
         case WRITE_FILE:
-          int file = open(cmd_args.front().file_name.c_str(),
-                          O_WRONLY | O_CREAT | O_TRUNC, 0666);
+          rett = dup2(_sockfd, STDERR_FILENO);
+          if (rett < 0)
+            perror("DUP44 FAIL");
+          close(_sockfd);
+          file = open(cmd_args.front().file_name.c_str(),
+                      O_WRONLY | O_CREAT | O_TRUNC, 0666);
           if (file < 0) {
             exit(1);
           }
@@ -131,7 +175,50 @@ void Rsh::exec_cmd(queue<group_token> cmd_args, vector<Pipe> &pipefd) {
           if (dup2(file, STDOUT_FILENO) < 0)
             exit(1);
           break;
+        case PIPE_n:
+          rett = dup2(_sockfd, STDERR_FILENO);
+          if (rett < 0)
+            perror("DUP44 FAIL");
+          close(_sockfd);
+          for (j = 0; j < pipefd.size(); j++) {
+            if (pipefd[j].delay_pipe == cmd_args.front().delay_pipe)
+              break;
+          }
+          if (j == pipefd.size())
+            rett = dup2(pipes.pipes[1], STDOUT_FILENO);
+          else {
+            rett = dup2(pipefd[j].pipes[1], STDOUT_FILENO);
+            pipefd[j].close_write_pipe();
+          }
+          if (rett < 0)
+            perror("DUP5 FAIL");
+          //          close(pipes.pipes[1]);
+          break;
+        case SUPERPIPE_n:
+          for (j = 0; j < pipefd.size(); j++) {
+            if (pipefd[j].delay_pipe == cmd_args.front().delay_pipe)
+              break;
+          }
+          if (j == pipefd.size()) {
+            rett = dup2(pipes.pipes[1], STDERR_FILENO);
+            if (rett < 0)
+              perror("DUP6 FAIL");
+            rett = dup2(pipes.pipes[1], STDOUT_FILENO);
+            if (rett < 0)
+              perror("DUP7 FAIL");
+          } else {
+            rett = dup2(pipefd[j].pipes[1], STDERR_FILENO);
+            if (rett < 0)
+              perror("DUP8 FAIL");
+            rett = dup2(pipefd[j].pipes[1], STDOUT_FILENO);
+            if (rett < 0)
+              perror("DUP9 FAIL");
+            pipefd[j].close_write_pipe();
+          }
+          //          close(pipes.pipes[1]);
+          break;
         }
+        pipes.close_write_pipe();
 
         char **arg = new char *[vs.size() + 1];
         for (int i = 0; i < vs.size(); i++) {

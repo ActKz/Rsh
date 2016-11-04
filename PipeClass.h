@@ -1,18 +1,14 @@
 #pragma once
-#include <vector>
 
 using namespace std;
 
 class Pipe{
     public:
-        Pipe(int);
         Pipe();
         ~Pipe();
+        void close_read_pipe();
+        void close_write_pipe();
 
-        void rdr_input(int);
-        void rdr_err();
-        void rdr_output(int);
-        void close_precmd();
-        void close_nextcmd();
         int pipes[2];
+        int delay_pipe;
 };

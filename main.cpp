@@ -32,14 +32,24 @@ void rsh(int sockfd){
       Rsh rsh(sockfd);
       queue<string> tmp;
       rsh.prepare(ROOT);
-      vector<Pipe> pipes;
+      vector<Pipe> pipefd;
       for(;;){
           tmp=rsh.readline();
           while(!tmp.empty()){
+              for(int i=0;i<pipefd.size();i++){
+                  cout<<"i:"<<i<<";pipes: "<<pipefd[i].pipes[0]<<", "<<pipefd[i].pipes[1]<<";delay: "<<pipefd[i].delay_pipe<<endl;
+//                if(pipefd[i].delay_pipe == 0){
+//                  pipefd[i].close_read_pipe();
+//                  pipefd.erase(pipefd.begin()+i);
+//                  i--;
+//                } else {
+                    pipefd[i].delay_pipe -= 1;
+//                }
+              }
               Tokenizer tokens(tmp.front().c_str());
               tokens.parse();
               queue<group_token> parsed_token = tokens.cmd_args();
-              rsh.exec_cmd(parsed_token, pipes);
+              rsh.exec_cmd(parsed_token, pipefd);
               tmp.pop();
           }
 
