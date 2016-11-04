@@ -1,14 +1,16 @@
-#include "RshClass.h"
 #include "PipeClass.h"
+#include "RshClass.h"
+#include "rshd.h"
 #include <algorithm>
 #include <errno.h>
+#include <fcntl.h>
 #include <iostream>
 #include <queue>
+#include <stdio.h>
 #include <string.h>
 #include <string>
 #include <sys/wait.h>
 #include <unistd.h>
-#include <stdio.h>
 using namespace std;
 
 Rsh::Rsh(int sockfd) { _sockfd = sockfd; }
@@ -46,7 +48,6 @@ void Rsh::chroot(const char *root) {
   }
 }
 
-
 void Rsh::exec_cmd(queue<group_token> cmd_args, vector<Pipe> &pipefd) {
   int childpid, pre_readfd = 0, pre_writefd = 0;
   while (!cmd_args.empty()) {
@@ -74,7 +75,7 @@ void Rsh::exec_cmd(queue<group_token> cmd_args, vector<Pipe> &pipefd) {
       exit(0);
     } else {
 
-        Pipe pipes;
+      Pipe pipes;
 
       if ((childpid = fork()) < 0)
         perror(strerror(errno));
@@ -82,37 +83,55 @@ void Rsh::exec_cmd(queue<group_token> cmd_args, vector<Pipe> &pipefd) {
         close(pipes.pipes[1]);
         int ret;
         char res[1000];
-        if(!pipefd.empty()){
-            cout<<"Read: "<<pipefd.back().pipes[0]<<endl;
-            cout<<"Write: "<<pipefd.back().pipes[1]<<endl;
-            pipefd.pop_back();
+        if (!pipefd.empty()) {
+          cout << "Read: " << pipefd.back().pipes[0] << endl;
+          cout << "Write: " << pipefd.back().pipes[1] << endl;
+          pipefd.pop_back();
         }
-        if(cmd_args.size()==1){
-            while((ret = read(pipes.pipes[0],res,1000)>0)){
-                    write_sock(res);
-                    }
-            close(pipes.pipes[0]);
-        }
-        else
-            pipefd.push_back(pipes);
+        if (cmd_args.size() == 1) {
+          memset(res, '\0', 1000);
+          while ((ret = read(pipes.pipes[0], res, 1000) > 0)) {
+            write_sock(res);
+          }
+          close(pipes.pipes[0]);
+        } else
+          pipefd.push_back(pipes);
         waitpid(childpid, &ret, 0);
 
       } else { // child
-          close(pipes.pipes[0]);
-          cout<<"CMD: "<<CMD<<endl;
-          int rett;
-          if(!pipefd.empty()){
-              rett = dup2(pipefd.back().pipes[0], STDIN_FILENO);
-              if(rett<0)
-              perror("DUP FAIL");
-              else
-                  close(pipefd.back().pipes[0]);
-          }
-          rett = dup2(pipes.pipes[1],STDOUT_FILENO);
-          if(rett<0)
-              perror("DUP FAIL");
+        close(pipes.pipes[0]);
+        cout << "CMD: " << CMD << endl;
+        int rett;
+        cout << "Curr st: " << cmd_args.front().st << endl;
+        if (!pipefd.empty()) {
+          rett = dup2(pipefd.back().pipes[0], STDIN_FILENO);
+          if (rett < 0)
+            perror("DUP FAIL");
           else
-              close(pipes.pipes[1]);
+            close(pipefd.back().pipes[0]);
+        }
+        switch (cmd_args.front().st) {
+        case NORMAL:
+          rett = dup2(pipes.pipes[1], STDERR_FILENO);
+          if (rett < 0)
+            perror("DUP FAIL");
+          rett = dup2(pipes.pipes[1], STDOUT_FILENO);
+          if (rett < 0)
+            perror("DUP FAIL");
+          else
+            close(pipes.pipes[1]);
+          break;
+        case WRITE_FILE:
+          int file = open(cmd_args.front().file_name.c_str(),
+                          O_WRONLY | O_CREAT | O_TRUNC, 0666);
+          if (file < 0) {
+            exit(1);
+          }
+          // redirect standard output to the file
+          if (dup2(file, STDOUT_FILENO) < 0)
+            exit(1);
+          break;
+        }
 
         char **arg = new char *[vs.size() + 1];
         for (int i = 0; i < vs.size(); i++) {
@@ -127,8 +146,8 @@ void Rsh::exec_cmd(queue<group_token> cmd_args, vector<Pipe> &pipefd) {
           write_sock("Unknown command: [" + CMD + "].\n");
           break;
         }
-        if (ret < 0)
-          perror(strerror(errno));
+        //      if (ret < 0)
+        //        perror(strerror(errno));
 
         for (int i = 0; i < vs.size(); i++)
           delete[] arg[i];
