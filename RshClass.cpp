@@ -132,8 +132,9 @@ void Rsh::exec_cmd(queue<group_token> cmd_args, vector<Pipe> &pipefd) {
           pre_readfd = pipes.pipes[0];
         }
         waitpid(childpid, &ret, 0);
-        if(WIFEXITED(ret) && WEXITSTATUS(ret)==0);
-        else {
+        if(WIFEXITED(ret)){
+            int R = WEXITSTATUS(ret);
+            if(R!=0){
             if(cmd_args.front().st == PIPE_n ||
                   cmd_args.front().st == SUPERPIPE_n){
                 pipes.close_write_pipe();
@@ -144,6 +145,7 @@ void Rsh::exec_cmd(queue<group_token> cmd_args, vector<Pipe> &pipefd) {
             if(push_flag == 1)
                 pipefd.pop_back();
             break;
+            }
         }
 
 
