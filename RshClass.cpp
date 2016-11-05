@@ -1,6 +1,6 @@
 #include "PipeClass.h"
 #include "RshClass.h"
-#include "rshd.h"
+#include "state.h"
 #include <algorithm>
 #include <errno.h>
 #include <fcntl.h>
