@@ -132,7 +132,8 @@ void Rsh::exec_cmd(queue<group_token> cmd_args, vector<Pipe> &pipefd) {
           pre_readfd = pipes.pipes[0];
         }
         waitpid(childpid, &ret, 0);
-        if(ret != 0){
+        if(WIFEXITED(ret) && WEXITSTATUS(ret)==0);
+        else {
             if(cmd_args.front().st == PIPE_n ||
                   cmd_args.front().st == SUPERPIPE_n){
                 pipes.close_write_pipe();
