@@ -13,6 +13,7 @@ public:
     void setenv(const string, const string);
     void chroot(const char*);
     void exec_cmd(queue<group_token>, vector<Pipe>&);
+    void general_dup2(int,int);
 
     void prepare(const char*);
     void read_sock();

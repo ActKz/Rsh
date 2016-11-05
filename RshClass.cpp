@@ -48,6 +48,15 @@ void Rsh::chroot(const char *root) {
   }
 }
 
+void Rsh::general_dup2(int newfd,int oldfd){
+    int rett;
+    rett = dup2(newfd, oldfd);
+    if (rett < 0)
+      perror("DUP1 FAIL");
+    else if (close(newfd) != 0)
+      cerr << "Close fail: pipefd=" << newfd << strerror(errno)
+           << endl;
+}
 void Rsh::exec_cmd(queue<group_token> cmd_args, vector<Pipe> &pipefd) {
   int childpid, pre_readfd = 0, pre_writefd = 0;
   while (!cmd_args.empty()) {
@@ -81,9 +90,8 @@ void Rsh::exec_cmd(queue<group_token> cmd_args, vector<Pipe> &pipefd) {
       if ((childpid = fork()) < 0)
         perror(strerror(errno));
       if (childpid > 0) { // parent
-        int ret;
+        int ret, push_flag = 0;
         char res[1000];
-        //      close(pipes.pipes[1]);
 
         for (int i = 0; i < pipefd.size(); i++) {
           if (pipefd[i].delay_pipe == 0) {
@@ -103,6 +111,7 @@ void Rsh::exec_cmd(queue<group_token> cmd_args, vector<Pipe> &pipefd) {
             if(i == pipefd.size()){
           pipes.delay_pipe = cmd_args.front().delay_pipe;
           pipefd.push_back(pipes);
+          push_flag = 1;
             }
           cout << "pipes: " << pipefd.back().pipes[0] << ", "
                << pipefd.back().pipes[1]
@@ -123,76 +132,66 @@ void Rsh::exec_cmd(queue<group_token> cmd_args, vector<Pipe> &pipefd) {
           pre_readfd = pipes.pipes[0];
         }
         waitpid(childpid, &ret, 0);
+        if(ret != 0){
+            if(cmd_args.front().st == PIPE_n ||
+                  cmd_args.front().st == SUPERPIPE_n){
+                pipes.close_write_pipe();
+                pipes.close_read_pipe();
+            } else if(cmd_args.size()!=1){
+                pipes.close_read_pipe();
+            }
+            if(push_flag == 1)
+                pipefd.pop_back();
+            break;
+        }
+
 
       } else { // child
         cout << "CMD: " << CMD << endl;
-        //      close(pipes.pipes[0]);
         pipes.close_read_pipe();
         int rett, file;
+        /* previous pipe redirection to STDIN */
+        /* start */
         if (pre_readfd != 0) {
           cout << "PREV READ: " << pre_readfd << endl;
-          rett = dup2(pre_readfd, STDIN_FILENO);
-          if (rett < 0)
-            perror("DUP1 FAIL");
-          else if (close(pre_readfd) != 0)
-            cerr << "Close fail: pipefd=" << pre_readfd << strerror(errno)
-                 << endl;
+          general_dup2(pre_readfd, STDIN_FILENO);
         } else {
           for (int i = 0; i < pipefd.size(); i++) {
             if (pipefd[i].delay_pipe == 0) {
               pipefd[i].close_write_pipe();
-              rett = dup2(pipefd[i].pipes[0], STDIN_FILENO);
-              if (rett < 0)
-                perror("DUP2 FAIL");
-              else
-                //                  close(pipefd[i].pipes[0]);
-                pipefd[i].close_read_pipe();
+              pipefd[i].rdr_read2in();
             }
           }
         }
+        /* pipe redirection according to current state */
+        /* start */
         int j;
         switch (cmd_args.front().st) {
         case NORMAL:
-          rett = dup2(pipes.pipes[1], STDERR_FILENO);
-          if (rett < 0)
-            perror("DUP3 FAIL");
-          rett = dup2(pipes.pipes[1], STDOUT_FILENO);
-          if (rett < 0)
-            perror("DUP4 FAIL");
-          //          close(pipes.pipes[1]);
+          pipes.rdr_err2write();
+          pipes.rdr_out2write();
           break;
         case WRITE_FILE:
-          rett = dup2(_sockfd, STDERR_FILENO);
-          if (rett < 0)
-            perror("DUP44 FAIL");
-          close(_sockfd);
+//        general_dup2(_sockfd, STDERR_FILENO);
           file = open(cmd_args.front().file_name.c_str(),
                       O_WRONLY | O_CREAT | O_TRUNC, 0666);
           if (file < 0) {
             exit(1);
           }
-          // redirect standard output to the file
-          if (dup2(file, STDOUT_FILENO) < 0)
-            exit(1);
+          general_dup2(file, STDOUT_FILENO);
           break;
         case PIPE_n:
-          rett = dup2(_sockfd, STDERR_FILENO);
-          if (rett < 0)
-            perror("DUP44 FAIL");
-          close(_sockfd);
+//        general_dup2(_sockfd, STDERR_FILENO);
           for (j = 0; j < pipefd.size(); j++) {
             if (pipefd[j].delay_pipe == cmd_args.front().delay_pipe)
               break;
           }
           if (j == pipefd.size())
-            rett = dup2(pipes.pipes[1], STDOUT_FILENO);
+            pipes.rdr_out2write();
           else {
-            rett = dup2(pipefd[j].pipes[1], STDOUT_FILENO);
+            pipefd[j].rdr_out2write();
             pipefd[j].close_write_pipe();
           }
-          if (rett < 0)
-            perror("DUP5 FAIL");
-          //          close(pipes.pipes[1]);
           break;
         case SUPERPIPE_n:
           for (j = 0; j < pipefd.size(); j++) {
@@ -200,26 +199,17 @@ void Rsh::exec_cmd(queue<group_token> cmd_args, vector<Pipe> &pipefd) {
               break;
           }
           if (j == pipefd.size()) {
-            rett = dup2(pipes.pipes[1], STDERR_FILENO);
-            if (rett < 0)
-              perror("DUP6 FAIL");
-            rett = dup2(pipes.pipes[1], STDOUT_FILENO);
-            if (rett < 0)
-              perror("DUP7 FAIL");
+            pipes.rdr_err2write();
+            pipes.rdr_out2write();
           } else {
-            rett = dup2(pipefd[j].pipes[1], STDERR_FILENO);
-            if (rett < 0)
-              perror("DUP8 FAIL");
-            rett = dup2(pipefd[j].pipes[1], STDOUT_FILENO);
-            if (rett < 0)
-              perror("DUP9 FAIL");
+            pipefd[j].rdr_err2write();
+            pipefd[j].rdr_out2write();
             pipefd[j].close_write_pipe();
           }
-          //          close(pipes.pipes[1]);
           break;
         }
         pipes.close_write_pipe();
-
+        /* pipe redirection end */
         char **arg = new char *[vs.size() + 1];
         for (int i = 0; i < vs.size(); i++) {
           arg[i] = new char[vs[i].length() + 1];
@@ -231,10 +221,11 @@ void Rsh::exec_cmd(queue<group_token> cmd_args, vector<Pipe> &pipefd) {
         switch (errno) {
         case ENOENT:
           write_sock("Unknown command: [" + CMD + "].\n");
+          for (int i = 0; i < vs.size(); i++)
+            delete[] arg[i];
+          exit(1);
           break;
         }
-        //      if (ret < 0)
-        //        perror(strerror(errno));
 
         for (int i = 0; i < vs.size(); i++)
           delete[] arg[i];

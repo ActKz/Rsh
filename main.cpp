@@ -5,10 +5,19 @@
 #include <string>
 #include <queue>
 #include <vector>
-#define ROOT "ras"
 #include <iostream>
 #include <errno.h>
+#include <signal.h>
+#include <sys/wait.h>
+#define ROOT "ras"
+
 using namespace std;
+void wait_hanlder(int signo)
+{
+    int status;
+    waitpid(-1,&status, WNOHANG)
+        /* empty */;
+}
 void rsh(int);
 
 int main(int argc, char *argv[]){
@@ -17,6 +26,7 @@ int main(int argc, char *argv[]){
    server.prepare();
   for(;;) {
     newsockfd = server.accept_sock();
+    signal(SIGCHLD, wait_hanlder);
     if ((server.childpid = fork()) < 0)
         perror(strerror(errno));
     else if (server.childpid == 0) {
@@ -29,6 +39,8 @@ int main(int argc, char *argv[]){
 }
 
 void rsh(int sockfd){
+      if(dup2(sockfd, STDERR_FILENO)<0)
+          perror("DUPP FAIL");
       Rsh rsh(sockfd);
       queue<string> tmp;
       rsh.prepare(ROOT);
