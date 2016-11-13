@@ -174,6 +174,16 @@ void Rsh::exec_cmd(queue<group_token> cmd_args, vector<Pipe> &pipefd) {
           pipes.rdr_err2write();
           pipes.rdr_out2write();
           break;
+        case APPEND_FILE:
+          file = open(cmd_args.front().file_name.c_str(),
+                      O_WRONLY | O_APPEND | O_CREAT, 0666);
+          if (file < 0) {
+            cerr<<"FAIL!"<<endl;
+            exit(1);
+          }
+          cout<<"SUCCESS!"<<endl;
+          general_dup2(file, STDOUT_FILENO);
+          break;
         case WRITE_FILE:
 //        general_dup2(_sockfd, STDERR_FILENO);
           file = open(cmd_args.front().file_name.c_str(),
@@ -272,8 +282,17 @@ void Rsh::read_sock() {
 #ifdef test
   sprintf(_buf, "aaaaaaaaaa\r\nhhhhhhhhhhhhh\r\ncccccccccccc\r\n");
 #endif
+  int bufSize = BUFF_SIZE;
+  int next=0;
   memset(_buf, '\0', BUFF_SIZE);
-  _buflen = read(_sockfd, _buf, BUFF_SIZE);
+          while ((_buflen = read(_sockfd, _buf+next, bufSize)) > 0) {
+              if(strchr(_buf,'\n') == NULL){
+                next = strlen(_buf);
+              } else{
+                break;
+              }
+          }
+//  _buflen = read(_sockfd, _buf, BUFF_SIZE);
   if (_buflen < 0)
     perror(strerror(errno));
 }

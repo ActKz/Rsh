@@ -61,10 +61,14 @@ void Tokenizer::parse_single_command(char *str){
                 }
                 break;
             case '>':
-                tmp.st = WRITE_FILE;
+
+                if(ptr[0]=='\0')
+                    tmp.st = WRITE_FILE;
+                else if(ptr[0] =='>')
+                    tmp.st = APPEND_FILE;
                 break;
             default:
-                if(tmp.st != WRITE_FILE){
+                if(tmp.st != WRITE_FILE && tmp.st != APPEND_FILE){
                     string temp = ptr;
                     tmp.argv.push_back(temp);
                 }
