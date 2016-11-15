@@ -91,7 +91,7 @@ void Rsh::exec_cmd(queue<group_token> cmd_args, vector<Pipe> &pipefd) {
         perror(strerror(errno));
       if (childpid > 0) { // parent
         int ret, push_flag = 0;
-        char res[1000];
+        char res[5000];
 
         for (int i = 0; i < pipefd.size(); i++) {
           if (pipefd[i].delay_pipe == 0) {
@@ -109,9 +109,9 @@ void Rsh::exec_cmd(queue<group_token> cmd_args, vector<Pipe> &pipefd) {
                     break;
             }
             if(i == pipefd.size()){
-          pipes.delay_pipe = cmd_args.front().delay_pipe;
-          pipefd.push_back(pipes);
-          push_flag = 1;
+              pipes.delay_pipe = cmd_args.front().delay_pipe;
+              pipefd.push_back(pipes);
+              push_flag = 1;
             }
           cout << "pipes: " << pipefd.back().pipes[0] << ", "
                << pipefd.back().pipes[1]
@@ -119,9 +119,10 @@ void Rsh::exec_cmd(queue<group_token> cmd_args, vector<Pipe> &pipefd) {
         } else if (cmd_args.size() == 1) {
 
           pipes.close_write_pipe();
-          memset(res, '\0', 1000);
-          while ((ret = read(pipes.pipes[0], res, 1000) > 0)) {
+          memset(res, '\0', 5000);
+          while ((ret = read(pipes.pipes[0], res, 5000) > 0)) {
             write_sock(res);
+            memset(res, '\0', 5000);
           }
           pipes.close_read_pipe();
         } else {
@@ -234,15 +235,10 @@ void Rsh::exec_cmd(queue<group_token> cmd_args, vector<Pipe> &pipefd) {
         switch (errno) {
         case ENOENT:
           write_sock("Unknown command: [" + CMD + "].\n");
-          for (int i = 0; i < vs.size(); i++)
-            delete[] arg[i];
           exit(1);
           break;
         }
-
-        for (int i = 0; i < vs.size(); i++)
-          delete[] arg[i];
-        exit(0);
+        exit(1);
       }
     }
     cmd_args.pop();
